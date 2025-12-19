@@ -1,0 +1,33 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+
+# Production
+build
+dist
+target
+
+# Misc
+.DS_Store
+.env
+.npmrc
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# VS Code
+.vscode/
+
+# Spring Boot
+.mvn/
+mvnw
+mvnw.cmd
+*.class
+*.jar
+*.war
+*.ear
+*.log
