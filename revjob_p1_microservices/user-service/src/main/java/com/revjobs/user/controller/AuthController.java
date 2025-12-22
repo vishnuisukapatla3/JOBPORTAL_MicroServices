@@ -33,5 +33,26 @@ public class AuthController {
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("User Service is running");
     }
-}
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestBody java.util.Map<String, String> request) {
+        authService.forgotPassword(request.get("email"));
+        return ResponseEntity.ok(ApiResponse.success("OTP sent successfully", null));
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<Boolean>> verifyOtp(@RequestBody java.util.Map<String, String> request) {
+        boolean isValid = authService.verifyOtp(request.get("email"), request.get("otp"));
+        if (isValid) {
+            return ResponseEntity.ok(ApiResponse.success("OTP verification successful", true));
+        } else {
+            return ResponseEntity.status(400).body(ApiResponse.error("Invalid or expired OTP"));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@RequestBody java.util.Map<String, String> request) {
+        authService.resetPassword(request.get("email"), request.get("otp"), request.get("newPassword"));
+        return ResponseEntity.ok(ApiResponse.success("Password reset successful", null));
+    }
+}

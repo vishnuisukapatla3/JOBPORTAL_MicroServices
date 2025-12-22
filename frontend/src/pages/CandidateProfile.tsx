@@ -10,6 +10,8 @@ const CandidateProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const [candidate, setCandidate] = useState<any>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadCandidateData();
@@ -21,10 +23,18 @@ const CandidateProfile: React.FC = () => {
       const apiData = await userAPI.getProfile();
       const localData = JSON.parse(localStorage.getItem(`userProfile_${user.email}`) || '{}');
 
-      // Merge: backend identity (apiData) overrides localData identity
-      const profileData = { ...localData, ...apiData };
+      // Merge: localData overrides backend to show latest user edits
+      const profileData = { ...apiData, ...localData };
 
       const appliedJobs = JSON.parse(localStorage.getItem(`appliedJobs_${user.email}`) || '[]');
+
+      // Load profile image from local storage
+      if (profileData.profilePicture) {
+        setProfileImage(profileData.profilePicture);
+      } else if (profileData.profileImage) {
+        // Fallback for previous implementation
+        setProfileImage(profileData.profileImage);
+      }
 
       setCandidate({
         id: id || profileData.id || user.id,
@@ -41,9 +51,31 @@ const CandidateProfile: React.FC = () => {
         certifications: profileData.certifications || [],
         languages: profileData.languages || ['English'],
         resumeUrl: profileData.resumeUrl || '#',
+        resumeName: profileData.resumeName || '',
         expectedSalary: profileData.expectedSalary || 0
       });
     }
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && user?.email) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setProfileImage(base64String);
+
+        // Save to local storage
+        const currentData = JSON.parse(localStorage.getItem(`userProfile_${user.email}`) || '{}');
+        const updatedData = { ...currentData, profilePicture: base64String };
+        localStorage.setItem(`userProfile_${user.email}`, JSON.stringify(updatedData));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   if (!candidate) {
@@ -99,9 +131,35 @@ const CandidateProfile: React.FC = () => {
           <Grid item xs={12} md={4}>
             <Card sx={{ mb: 3 }}>
               <CardContent sx={{ textAlign: 'center' }}>
-                <Avatar sx={{ width: 100, height: 100, mx: 'auto', mb: 2, bgcolor: 'primary.main', fontSize: '2rem' }}>
-                  {candidate.name[0]}
-                </Avatar>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  hidden
+                  accept="image/*"
+                />
+                <Box position="relative" display="inline-block">
+                  <Avatar
+                    src={profileImage || undefined}
+                    onClick={triggerFileInput}
+                    sx={{
+                      width: 100,
+                      height: 100,
+                      mx: 'auto',
+                      mb: 2,
+                      bgcolor: 'primary.main',
+                      fontSize: '2rem',
+                      cursor: 'pointer',
+                      transition: '0.3s',
+                      '&:hover': {
+                        opacity: 0.8,
+                        boxShadow: '0 0 10px rgba(0,0,0,0.2)'
+                      }
+                    }}
+                  >
+                    {!profileImage && candidate.name[0]}
+                  </Avatar>
+                </Box>
                 <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
                   {candidate.name}
                 </Typography>
@@ -128,7 +186,24 @@ const CandidateProfile: React.FC = () => {
                   <Button variant="contained" startIcon={<Message />} fullWidth>
                     Send Message
                   </Button>
-                  <Button variant="outlined" startIcon={<Download />} fullWidth>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Download />}
+                    fullWidth
+                    onClick={() => {
+                      if (candidate.resumeUrl && candidate.resumeUrl !== '#') {
+                        // Open base64 or URL
+                        const win = window.open();
+                        if (win) {
+                          win.document.write(
+                            `<iframe src="${candidate.resumeUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
+                          );
+                        }
+                      } else {
+                        alert('No resume uploaded');
+                      }
+                    }}
+                  >
                     Download Resume
                   </Button>
                   <Button variant="outlined" startIcon={<PersonAdd />} fullWidth>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, CardContent, Typography, Button, Chip, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Grid, Divider, Alert } from '@mui/material';
+import { Box, Card, CardContent, Typography, Button, Chip, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Grid, Divider, Alert, Container } from '@mui/material';
 import { LocationOn, Work, AttachMoney, CalendarToday, Business, Share, Bookmark, CloudUpload } from '@mui/icons-material';
 import { useParams } from 'react-router-dom';
 
 import { Job } from '../../types';
-import { jobAPI, applicationAPI, messageAPI } from '../../services/api';
+import { jobAPI, applicationAPI, messageAPI, API_BASE_URL } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
@@ -47,17 +47,20 @@ const JobDetail: React.FC = () => {
     try {
       let finalResumeUrl = resumeUrl;
 
+
+
       // Handle file upload if file selected
       if (resumeFile) {
         try {
           setUploading(true);
-          const uploadedUrl = await applicationAPI.uploadResume(resumeFile);
-          finalResumeUrl = uploadedUrl;
+          const rawPath = await applicationAPI.uploadResume(resumeFile);
+          finalResumeUrl = `${API_BASE_URL}${rawPath}`;
           setUploading(false);
         } catch (error) {
           setUploading(false);
           setApplying(false);
-          alert('Failed to upload resume. Please try again or provide a URL.');
+          console.error('File upload error:', error);
+          alert('Failed to upload resume file. Please try again.');
           return;
         }
       }
@@ -179,245 +182,247 @@ const JobDetail: React.FC = () => {
   };
 
   return (
-    <Box>
-      {applied && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          Application submitted successfully! We'll notify you about the next steps.
-        </Alert>
-      )}
+    <Box sx={{ py: 4, minHeight: '100vh', bgcolor: '#f8fafc' }}>
+      <Container maxWidth="lg">
+        {applied && (
+          <Alert severity="success" sx={{ mb: 3 }}>
+            Application submitted successfully! We'll notify you about the next steps.
+          </Alert>
+        )}
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Card sx={{ mb: 3 }}>
-            <CardContent sx={{ p: 4 }}>
-              <Box display="flex" justifyContent="between" alignItems="start" mb={3}>
-                <Box>
-                  <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: 'text.primary' }}>
-                    {job.title}
-                  </Typography>
-                  <Box display="flex" alignItems="center" gap={1} mb={2}>
-                    <Business color="primary" />
-                    <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>
-                      {job.companyName}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={8}>
+            <Card sx={{ mb: 3 }}>
+              <CardContent sx={{ p: 4 }}>
+                <Box display="flex" justifyContent="between" alignItems="start" mb={3}>
+                  <Box>
+                    <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: 'text.primary' }}>
+                      {job.title}
+                    </Typography>
+                    <Box display="flex" alignItems="center" gap={1} mb={2}>
+                      <Business color="primary" />
+                      <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>
+                        {job.companyName}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box display="flex" gap={1}>
+                    <Button variant="outlined" startIcon={<Share />} size="small">
+                      Share
+                    </Button>
+                    <Button variant="outlined" startIcon={<Bookmark />} size="small">
+                      Save
+                    </Button>
+                  </Box>
+                </Box>
+
+                <Grid container spacing={2} mb={3}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box display="flex" alignItems="center" gap={1} p={2} bgcolor="grey.50" borderRadius={2}>
+                      <LocationOn color="action" />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Location</Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {job.location} {job.remote && '(Remote)'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box display="flex" alignItems="center" gap={1} p={2} bgcolor="grey.50" borderRadius={2}>
+                      <Work color="action" />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Experience</Typography>
+                        <Typography variant="body1" fontWeight={500}>{job.experienceLevel}</Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box display="flex" alignItems="center" gap={1} p={2} bgcolor="grey.50" borderRadius={2}>
+                      <AttachMoney color="action" />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Salary</Typography>
+                        <Typography variant="body1" fontWeight={500}>{formatSalary(job.salaryMin, job.salaryMax)}</Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box display="flex" alignItems="center" gap={1} p={2} bgcolor="grey.50" borderRadius={2}>
+                      <CalendarToday color="action" />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Posted</Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {new Date(job.postedDate).toLocaleDateString()}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                </Grid>
+
+                <Divider sx={{ my: 3 }} />
+
+                <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+                  Job Description
+                </Typography>
+                <Typography variant="body1" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                  {job.description}
+                </Typography>
+
+                <Divider sx={{ my: 3 }} />
+
+                <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                  Required Skills
+                </Typography>
+                <Box display="flex" gap={1} flexWrap="wrap" mb={3}>
+                  {job.requirements.map((req, index) => (
+                    <Chip
+                      key={index}
+                      label={req}
+                      variant="outlined"
+                      sx={{
+                        bgcolor: 'primary.50',
+                        borderColor: 'primary.200',
+                        fontWeight: 500
+                      }}
+                    />
+                  ))}
+                </Box>
+
+                {job.applicationDeadline && (
+                  <Alert severity="warning" sx={{ mt: 3 }}>
+                    Application deadline: {new Date(job.applicationDeadline).toLocaleDateString()}
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Card sx={{ position: 'sticky', top: 20 }}>
+              <CardContent sx={{ p: 3 }}>
+                {user?.role === 'JOB_SEEKER' && (
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    size="large"
+                    onClick={() => setApplyDialogOpen(true)}
+                    disabled={applied}
+                    sx={{
+                      mb: 2,
+                      py: 1.5,
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      background: applied ? '#4ecdc4' : 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+                      '&:hover': {
+                        background: applied ? '#4ecdc4' : 'linear-gradient(135deg, #ee5a24 0%, #c44569 100%)',
+                        transform: applied ? 'none' : 'translateY(-2px)'
+                      }
+                    }}
+                  >
+                    {applied ? '✅ Application Submitted' : '🚀 Apply Now'}
+                  </Button>
+                )}
+
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mt: 3 }}>
+                  Job Details
+                </Typography>
+                <Box sx={{ '& > div': { mb: 2 } }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Job Type</Typography>
+                    <Typography variant="body1" fontWeight={500}>
+                      {job.remote ? 'Remote' : 'On-site'}
                     </Typography>
                   </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Experience Level</Typography>
+                    <Typography variant="body1" fontWeight={500}>{job.experienceLevel}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Status</Typography>
+                    <Chip
+                      label={job.status}
+                      color={job.status === 'ACTIVE' ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </Box>
                 </Box>
-                <Box display="flex" gap={1}>
-                  <Button variant="outlined" startIcon={<Share />} size="small">
-                    Share
-                  </Button>
-                  <Button variant="outlined" startIcon={<Bookmark />} size="small">
-                    Save
-                  </Button>
-                </Box>
-              </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
 
-              <Grid container spacing={2} mb={3}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box display="flex" alignItems="center" gap={1} p={2} bgcolor="grey.50" borderRadius={2}>
-                    <LocationOn color="action" />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Location</Typography>
-                      <Typography variant="body1" fontWeight={500}>
-                        {job.location} {job.remote && '(Remote)'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box display="flex" alignItems="center" gap={1} p={2} bgcolor="grey.50" borderRadius={2}>
-                    <Work color="action" />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Experience</Typography>
-                      <Typography variant="body1" fontWeight={500}>{job.experienceLevel}</Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box display="flex" alignItems="center" gap={1} p={2} bgcolor="grey.50" borderRadius={2}>
-                    <AttachMoney color="action" />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Salary</Typography>
-                      <Typography variant="body1" fontWeight={500}>{formatSalary(job.salaryMin, job.salaryMax)}</Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box display="flex" alignItems="center" gap={1} p={2} bgcolor="grey.50" borderRadius={2}>
-                    <CalendarToday color="action" />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Posted</Typography>
-                      <Typography variant="body1" fontWeight={500}>
-                        {new Date(job.postedDate).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-              </Grid>
+        {/* Apply Dialog */}
+        <Dialog open={applyDialogOpen} onClose={() => setApplyDialogOpen(false)} maxWidth="md" fullWidth>
+          <DialogTitle>Apply for {job.title}</DialogTitle>
+          <DialogContent>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>🔗 Resume URL</Typography>
+              <TextField
+                fullWidth
+                placeholder="https://drive.google.com/your-resume-link"
+                value={resumeUrl}
+                onChange={(e) => setResumeUrl(e.target.value)}
+                helperText="Paste your Google Drive, Dropbox, or LinkedIn resume link"
+                sx={{ mb: 3 }}
+              />
 
-              <Divider sx={{ my: 3 }} />
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, textAlign: 'center' }}>OR</Typography>
 
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                Job Description
-              </Typography>
-              <Typography variant="body1" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-                {job.description}
-              </Typography>
-
-              <Divider sx={{ my: 3 }} />
-
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                Required Skills
-              </Typography>
-              <Box display="flex" gap={1} flexWrap="wrap" mb={3}>
-                {job.requirements.map((req, index) => (
-                  <Chip
-                    key={index}
-                    label={req}
-                    variant="outlined"
-                    sx={{
-                      bgcolor: 'primary.50',
-                      borderColor: 'primary.200',
-                      fontWeight: 500
+              <Box sx={{ textAlign: 'center', mb: 2 }}>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  startIcon={<CloudUpload />}
+                  sx={{ mb: 1 }}
+                >
+                  Upload Resume PDF
+                  <input
+                    type="file"
+                    hidden
+                    accept=".pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.type !== 'application/pdf') {
+                          alert('Please upload a PDF file only');
+                          return;
+                        }
+                        if (file.size > 5 * 1024 * 1024) {
+                          alert('File size should be less than 5MB');
+                          return;
+                        }
+                        setResumeFile(file);
+                        setResumeUrl(''); // Clear URL if file is uploaded
+                      }
                     }}
                   />
-                ))}
-              </Box>
-
-              {job.applicationDeadline && (
-                <Alert severity="warning" sx={{ mt: 3 }}>
-                  Application deadline: {new Date(job.applicationDeadline).toLocaleDateString()}
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card sx={{ position: 'sticky', top: 20 }}>
-            <CardContent sx={{ p: 3 }}>
-              {user?.role === 'JOB_SEEKER' && (
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  onClick={() => setApplyDialogOpen(true)}
-                  disabled={applied}
-                  sx={{
-                    mb: 2,
-                    py: 1.5,
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    background: applied ? '#4ecdc4' : 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
-                    '&:hover': {
-                      background: applied ? '#4ecdc4' : 'linear-gradient(135deg, #ee5a24 0%, #c44569 100%)',
-                      transform: applied ? 'none' : 'translateY(-2px)'
-                    }
-                  }}
-                >
-                  {applied ? '✅ Application Submitted' : '🚀 Apply Now'}
                 </Button>
-              )}
-
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mt: 3 }}>
-                Job Details
-              </Typography>
-              <Box sx={{ '& > div': { mb: 2 } }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Job Type</Typography>
-                  <Typography variant="body1" fontWeight={500}>
-                    {job.remote ? 'Remote' : 'On-site'}
+                {resumeFile && (
+                  <Typography variant="body2" color="success.main">
+                    📄 {resumeFile.name} selected
                   </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Experience Level</Typography>
-                  <Typography variant="body1" fontWeight={500}>{job.experienceLevel}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Status</Typography>
-                  <Chip
-                    label={job.status}
-                    color={job.status === 'ACTIVE' ? 'success' : 'default'}
-                    size="small"
-                  />
-                </Box>
+                )}
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Apply Dialog */}
-      <Dialog open={applyDialogOpen} onClose={() => setApplyDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Apply for {job.title}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>🔗 Resume URL</Typography>
-            <TextField
-              fullWidth
-              placeholder="https://drive.google.com/your-resume-link"
-              value={resumeUrl}
-              onChange={(e) => setResumeUrl(e.target.value)}
-              helperText="Paste your Google Drive, Dropbox, or LinkedIn resume link"
-              sx={{ mb: 3 }}
-            />
-
-            <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, textAlign: 'center' }}>OR</Typography>
-
-            <Box sx={{ textAlign: 'center', mb: 2 }}>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<CloudUpload />}
-                sx={{ mb: 1 }}
-              >
-                Upload Resume PDF
-                <input
-                  type="file"
-                  hidden
-                  accept=".pdf"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      if (file.type !== 'application/pdf') {
-                        alert('Please upload a PDF file only');
-                        return;
-                      }
-                      if (file.size > 5 * 1024 * 1024) {
-                        alert('File size should be less than 5MB');
-                        return;
-                      }
-                      setResumeFile(file);
-                      setResumeUrl(''); // Clear URL if file is uploaded
-                    }
-                  }}
-                />
-              </Button>
-              {resumeFile && (
-                <Typography variant="body2" color="success.main">
-                  📄 {resumeFile.name} selected
-                </Typography>
-              )}
             </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setApplyDialogOpen(false)} sx={{ color: '#666' }}>Cancel</Button>
-          <Button
-            onClick={handleApply}
-            variant="contained"
-            disabled={applying || uploading || (!resumeUrl.trim() && !resumeFile)}
-            sx={{
-              background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #ee5a24 0%, #c44569 100%)'
-              }
-            }}
-          >
-            {applying ? (uploading ? '⬆ Uploading...' : '🔄 Applying...') : '🚀 Submit Application'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setApplyDialogOpen(false)} sx={{ color: '#666' }}>Cancel</Button>
+            <Button
+              onClick={handleApply}
+              variant="contained"
+              disabled={applying || uploading || (!resumeUrl.trim() && !resumeFile)}
+              sx={{
+                background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #ee5a24 0%, #c44569 100%)'
+                }
+              }}
+            >
+              {applying ? (uploading ? '⬆ Uploading...' : '🔄 Applying...') : '🚀 Submit Application'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
     </Box>
   );
 };

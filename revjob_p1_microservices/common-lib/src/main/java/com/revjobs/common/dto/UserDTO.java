@@ -15,4 +15,3 @@ public class UserDTO {
     private String role;
     private Boolean active;
 }
-

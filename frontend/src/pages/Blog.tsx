@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Box, Card, CardContent, Typography, Grid, Button, Chip, Avatar, TextField, InputAdornment, IconButton } from '@mui/material';
-import { Search, ThumbUp, Comment } from '@mui/icons-material';
+import { Search, ThumbUp } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { blogPosts } from '../data/blogPosts';
 
 const Blog: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
+  const navigate = useNavigate();
 
   const handleLike = (postId: number) => {
     setLikedPosts(prev => {
@@ -18,81 +21,16 @@ const Blog: React.FC = () => {
     });
   };
 
-  const blogPosts = [
-    {
-      id: 1,
-      title: '10 Tips for Acing Your Next Job Interview',
-      excerpt: 'Master the art of job interviews with these proven strategies that will help you stand out from other candidates.',
-      author: 'Sarah Johnson',
-      date: '2024-01-15',
-      category: 'Interview Tips',
-      readTime: '5 min read',
+  const handleReadMore = (id: number) => {
+    navigate(`/blog/${id}`);
+  };
 
-      featured: true
-    },
-    {
-      id: 2,
-      title: 'Remote Work: The Future of Employment',
-      excerpt: 'Explore how remote work is reshaping the job market and what it means for both employers and job seekers.',
-      author: 'Mike Chen',
-      date: '2024-01-12',
-      category: 'Future of Work',
-      readTime: '8 min read',
-
-      featured: true
-    },
-    {
-      id: 3,
-      title: 'Building a Standout Resume in 2024',
-      excerpt: 'Learn the latest resume trends and techniques to make your application stand out in today\'s competitive job market.',
-      author: 'Lisa Wang',
-      date: '2024-01-10',
-      category: 'Resume Tips',
-      readTime: '6 min read',
-
-      featured: false
-    },
-    {
-      id: 4,
-      title: 'Salary Negotiation: Getting What You Deserve',
-      excerpt: 'Master the art of salary negotiation with these expert tips and strategies for maximizing your earning potential.',
-      author: 'David Brown',
-      date: '2024-01-08',
-      category: 'Career Advice',
-      readTime: '7 min read',
-
-      featured: false
-    },
-    {
-      id: 5,
-      title: 'Tech Skills in High Demand for 2024',
-      excerpt: 'Discover the most sought-after technical skills that employers are looking for in the current job market.',
-      author: 'Emily Davis',
-      date: '2024-01-05',
-      category: 'Tech Trends',
-      readTime: '4 min read',
-
-      featured: false
-    },
-    {
-      id: 6,
-      title: 'Networking in the Digital Age',
-      excerpt: 'Learn how to build meaningful professional connections online and leverage social media for career growth.',
-      author: 'Alex Rodriguez',
-      date: '2024-01-03',
-      category: 'Networking',
-      readTime: '6 min read',
-
-      featured: false
-    }
-  ];
-
-  const categories = ['All', 'Interview Tips', 'Career Advice', 'Resume Tips', 'Tech Trends', 'Future of Work', 'Networking'];
+  const categories = ['All', 'Job Market', 'Job Search', 'Interview Tips', 'Career Advice', 'Resume Tips', 'Tech Trends', 'Future of Work', 'Networking'];
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const filteredPosts = blogPosts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
+      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || post.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -103,40 +41,40 @@ const Blog: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       {/* Professional Header */}
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)',
           py: 4,
           mb: 4
         }}
       >
         <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3 }}>
-          <Typography 
-            variant="h3" 
-            align="center" 
-            gutterBottom 
-            sx={{ 
-              fontWeight: 700, 
+          <Typography
+            variant="h3"
+            align="center"
+            gutterBottom
+            sx={{
+              fontWeight: 700,
               color: 'white',
               mb: 2
             }}
           >
             Career Insights & Tips
           </Typography>
-          <Typography 
-            variant="h6" 
-            align="center" 
-            sx={{ 
-              maxWidth: 800, 
-              mx: 'auto', 
-              mb: 3, 
+          <Typography
+            variant="h6"
+            align="center"
+            sx={{
+              maxWidth: 800,
+              mx: 'auto',
+              mb: 3,
               color: 'rgba(255,255,255,0.9)',
               fontWeight: 400
             }}
           >
             Stay ahead in your career with expert advice, industry insights, and practical tips from our team of career specialists.
           </Typography>
-          
+
           <Box sx={{ maxWidth: 600, mx: 'auto' }}>
             <TextField
               fullWidth
@@ -149,8 +87,8 @@ const Blog: React.FC = () => {
                     <Search sx={{ color: 'white' }} />
                   </InputAdornment>
                 ),
-                sx: { 
-                  bgcolor: 'rgba(255,255,255,0.1)', 
+                sx: {
+                  bgcolor: 'rgba(255,255,255,0.1)',
                   color: 'white',
                   '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' },
                   '& input::placeholder': { color: 'rgba(255,255,255,0.7)' }
@@ -186,7 +124,7 @@ const Blog: React.FC = () => {
           <Grid container spacing={4}>
             {featuredPosts.map((post) => (
               <Grid item xs={12} md={6} key={post.id}>
-                <Card className="card-hover-lift" sx={{ 
+                <Card className="card-hover-lift" sx={{
                   height: '100%',
                   backgroundColor: '#ffffff',
                   borderRadius: 3,
@@ -194,9 +132,6 @@ const Blog: React.FC = () => {
                 }}>
                   <CardContent sx={{ p: 4 }}>
                     <Box display="flex" alignItems="center" gap={2} mb={3}>
-                      <Typography sx={{ fontSize: '3rem' }}>
-                        {post.image}
-                      </Typography>
                       <Box>
                         <Chip label="Featured" color="primary" size="small" sx={{ mb: 1 }} />
                         <Typography variant="caption" sx={{ color: '#757575' }} display="block">
@@ -204,16 +139,16 @@ const Blog: React.FC = () => {
                         </Typography>
                       </Box>
                     </Box>
-                    
+
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: '#212121' }}>
                       {post.title}
                     </Typography>
-                    
+
                     <Typography variant="body1" sx={{ color: '#757575' }} paragraph>
                       {post.excerpt}
                     </Typography>
-                    
-                    <Box display="flex" alignItems="center" justifyContent="between" mt={3}>
+
+                    <Box display="flex" alignItems="center" justifyContent="space-between" mt={3}>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
                           {post.author[0]}
@@ -228,19 +163,15 @@ const Blog: React.FC = () => {
                         </Box>
                       </Box>
                       <Box display="flex" alignItems="center" gap={1}>
-                        <IconButton 
-                          size="small" 
+                        <IconButton
+                          size="small"
                           onClick={() => handleLike(post.id)}
                           color={likedPosts.has(post.id) ? 'primary' : 'default'}
                         >
                           <ThumbUp fontSize="small" />
                         </IconButton>
                         <Typography variant="caption" sx={{ color: '#757575' }}>24</Typography>
-                        <IconButton size="small">
-                          <Comment fontSize="small" />
-                        </IconButton>
-                        <Typography variant="caption" sx={{ color: '#757575' }}>8</Typography>
-                        <Button variant="outlined" size="small" sx={{ ml: 1 }}>
+                        <Button variant="outlined" size="small" sx={{ ml: 1 }} onClick={() => handleReadMore(post.id)}>
                           Read More
                         </Button>
                       </Box>
@@ -261,30 +192,26 @@ const Blog: React.FC = () => {
         <Grid container spacing={3}>
           {regularPosts.map((post) => (
             <Grid item xs={12} sm={6} md={4} key={post.id}>
-              <Card className="card-hover-lift" sx={{ 
+              <Card className="card-hover-lift" sx={{
                 height: '100%',
                 backgroundColor: '#ffffff',
                 borderRadius: 3,
-                boxShadow: 2
-              }}>
+                boxShadow: 2,
+                cursor: 'pointer' // Add cursor pointer
+              }} onClick={() => handleReadMore(post.id)}>
                 <CardContent sx={{ p: 3 }}>
-                  <Box textAlign="center" mb={2}>
-                    <Typography sx={{ fontSize: '2.5rem' }}>
-                      {post.image}
-                    </Typography>
-                  </Box>
-                  
+
                   <Chip label={post.category} size="small" sx={{ mb: 2 }} />
-                  
+
                   <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: '#212121' }}>
                     {post.title}
                   </Typography>
-                  
+
                   <Typography variant="body2" sx={{ color: '#757575' }} paragraph>
                     {post.excerpt}
                   </Typography>
-                  
-                  <Box display="flex" alignItems="center" justifyContent="between" mt={2}>
+
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mt={2}>
                     <Box>
                       <Typography variant="body2" sx={{ fontWeight: 500, color: '#212121' }}>
                         {post.author}
@@ -294,9 +221,9 @@ const Blog: React.FC = () => {
                       </Typography>
                     </Box>
                     <Box display="flex" alignItems="center" gap={1}>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleLike(post.id)}
+                      <IconButton
+                        size="small"
+                        onClick={(e) => { e.stopPropagation(); handleLike(post.id); }} // Stop propagation
                         color={likedPosts.has(post.id) ? 'primary' : 'default'}
                       >
                         <ThumbUp fontSize="small" />
@@ -327,7 +254,7 @@ const Blog: React.FC = () => {
             fullWidth
             placeholder="Enter your email"
             InputProps={{
-              sx: { 
+              sx: {
                 bgcolor: 'white',
                 '& input': { color: '#212121' }
               }

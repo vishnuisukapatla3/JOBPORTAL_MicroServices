@@ -347,19 +347,7 @@ const AdminDashboard: React.FC = () => {
           <Typography variant="h6" sx={{ opacity: 0.9, mb: 3 }}>
             Complete system management and analytics • Real-time monitoring
           </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<Refresh />}
-            onClick={fetchAllData}
-            disabled={loading}
-            sx={{
-              color: 'white',
-              borderColor: 'white',
-              '&:hover': { borderColor: 'rgba(255,255,255,0.8)', bgcolor: 'rgba(255,255,255,0.1)' }
-            }}
-          >
-            {loading ? 'Refreshing...' : 'Refresh Data'}
-          </Button>
+
         </Box>
       </Box>
 

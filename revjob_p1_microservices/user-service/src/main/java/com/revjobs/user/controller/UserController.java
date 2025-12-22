@@ -19,7 +19,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserDTO>> getUserById(@PathVariable Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new com.revjobs.common.exception.ResourceNotFoundException("User not found"));
-        
+
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
         dto.setFirstName(user.getFirstName());
@@ -27,7 +27,7 @@ public class UserController {
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole().name());
         dto.setActive(user.getActive());
-        
+
         return ResponseEntity.ok(ApiResponse.success(dto));
     }
 
@@ -35,7 +35,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserDTO>> getUserByEmail(@PathVariable String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new com.revjobs.common.exception.ResourceNotFoundException("User not found"));
-        
+
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
         dto.setFirstName(user.getFirstName());
@@ -43,8 +43,7 @@ public class UserController {
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole().name());
         dto.setActive(user.getActive());
-        
+
         return ResponseEntity.ok(ApiResponse.success(dto));
     }
 }
-

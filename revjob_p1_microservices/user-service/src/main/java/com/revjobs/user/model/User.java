@@ -13,12 +13,11 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "users",
-        indexes = {
-                @Index(name = "idx_user_email", columnList = "email"),
-                @Index(name = "idx_user_role", columnList = "role"),
-                @Index(name = "idx_user_created_at", columnList = "createdAt")
-        })
+@Table(name = "users", indexes = {
+        @Index(name = "idx_user_email", columnList = "email"),
+        @Index(name = "idx_user_role", columnList = "role"),
+        @Index(name = "idx_user_created_at", columnList = "createdAt")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -51,10 +50,10 @@ public class User implements UserDetails {
 
     @Column(name = "is_active", nullable = false)
     private Boolean active = true;
-    
+
     @Column(length = 100)
     private String oauth2Provider;
-    
+
     @Column(length = 200)
     private String oauth2Id;
 
@@ -80,20 +79,27 @@ public class User implements UserDetails {
     }
 
     @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isEnabled() { return active != null ? active : true; }
-    
+    public boolean isEnabled() {
+        return active != null ? active : true;
+    }
+
     @Override
     public String getPassword() {
         return password;
     }
 }
-

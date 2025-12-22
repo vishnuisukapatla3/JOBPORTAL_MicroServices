@@ -95,9 +95,11 @@ const MessageCenter: React.FC = () => {
             }
         });
 
+        // Create a local cache that includes existing cache
+        let currentCache = { ...partnersCache };
+
         // Fetch unknown partners
         if (unknownPartners.length > 0) {
-            const newCache = { ...partnersCache };
             const updates: Record<number, any> = {};
 
             await Promise.all(unknownPartners.map(async (pid) => {
@@ -114,18 +116,19 @@ const MessageCenter: React.FC = () => {
             }));
 
             if (Object.keys(updates).length > 0) {
+                // Update local cache with new data
+                currentCache = { ...currentCache, ...updates };
+                // Update state
                 setPartnersCache(prev => ({ ...prev, ...updates }));
             }
         }
 
-        // Build conversation list
+        // Build conversation list using the up-to-date local cache
         partners.forEach(pid => {
             const partnerMsgs = convMap.get(pid) || [];
             const lastMsg = partnerMsgs.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime())[0];
 
-            // Use current cache or what we just fetched. Note: simplified for React state updates, might lag one render if state update is slow, but acceptable here.
-            // Better to use a merged view.
-            const partnerData = partnersCache[pid] || { firstName: 'Loading...', lastName: '' };
+            const partnerData = currentCache[pid] || { firstName: 'Loading...', lastName: '' };
 
             newConversations.push({
                 partnerId: pid,

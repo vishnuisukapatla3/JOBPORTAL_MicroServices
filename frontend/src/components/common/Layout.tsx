@@ -14,6 +14,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  // Check for mobile device - md is 900px, so anything smaller triggers mobile view
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -24,6 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     logout();
     navigate('/');
     setAnchorEl(null);
+    setMobileMenuOpen(false); // Close mobile menu on logout
   };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -54,6 +56,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   };
 
+  // Common navigation items for reuse logic could go here, but for now we separate for styling differences
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="fixed" elevation={0} className="theme-nav" sx={{ zIndex: 1100 }}>
@@ -64,7 +68,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             RevJobs
           </Typography>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          {/* Mobile Menu Icon */}
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleMobileMenuToggle}
+            sx={{ display: { md: 'none' } }} // Show only on small screens
+          >
+            <MenuIcon />
+          </IconButton>
+
+          {/* Desktop Navigation */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Button color="inherit" onClick={() => navigate('/')} size="small" sx={{ ...navButtonStyle, bgcolor: isActive('/') ? 'rgba(255,255,255,0.2)' : 'transparent' }}>Home</Button>
             <Button color="inherit" onClick={() => navigate('/jobs')} size="small" sx={{ ...navButtonStyle, bgcolor: isActive('/jobs') ? 'rgba(255,255,255,0.2)' : 'transparent' }}>Jobs</Button>
             <Button color="inherit" onClick={() => navigate('/companies')} size="small" sx={{ ...navButtonStyle, bgcolor: isActive('/companies') ? 'rgba(255,255,255,0.2)' : 'transparent' }}>Companies</Button>
@@ -95,17 +111,109 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </>
             ) : (
               <>
-                <Button color="inherit" onClick={() => navigate('/login')} size="small" sx={navButtonStyle}>Login</Button>
-                <Button color="inherit" onClick={() => navigate('/register')} size="small" sx={navButtonStyle}>Register</Button>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => navigate('/login')}
+                  size="small"
+                  sx={{
+                    ...navButtonStyle,
+                    border: '1px solid rgba(255,255,255,0.5)',
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.1) !important',
+                      border: '1px solid #fff'
+                    }
+                  }}
+                >
+                  Join Now
+                </Button>
               </>
             )}
           </Box>
         </Toolbar>
       </AppBar>
-      <Box sx={{ minHeight: '100vh', paddingTop: '80px', position: 'relative', zIndex: 1 }}>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-          {children}
-        </Container>
+
+      {/* Mobile Navigation Drawer */}
+      <Drawer
+        anchor="right"
+        open={mobileMenuOpen}
+        onClose={handleMobileMenuToggle}
+        PaperProps={{
+          sx: { width: '250px' }
+        }}
+      >
+        <Box
+          role="presentation"
+          sx={{ width: 250 }}
+        >
+          <List>
+            {/* Public Links */}
+            <ListItem button onClick={() => handleMobileNavigation('/')}>
+              <ListItemText primary="Home" />
+            </ListItem>
+            <ListItem button onClick={() => handleMobileNavigation('/jobs')}>
+              <ListItemText primary="Jobs" />
+            </ListItem>
+            <ListItem button onClick={() => handleMobileNavigation('/companies')}>
+              <ListItemText primary="Companies" />
+            </ListItem>
+            <ListItem button onClick={() => handleMobileNavigation('/services')}>
+              <ListItemText primary="Services" />
+            </ListItem>
+            {/* User Specific Links */}
+            {user ? (
+              <>
+                <Box sx={{ my: 1, borderTop: '1px solid #eee' }} />
+                {user.role === 'JOB_SEEKER' && (
+                  <>
+                    <ListItem button onClick={() => handleMobileNavigation('/applications')}>
+                      <ListItemText primary="Applications" />
+                    </ListItem>
+                    <ListItem button onClick={() => handleMobileNavigation('/profile')}>
+                      <ListItemText primary="Profile" />
+                    </ListItem>
+                  </>
+                )}
+                {user.role === 'RECRUITER' && (
+                  <>
+                    <ListItem button onClick={() => handleMobileNavigation('/employer/dashboard')}>
+                      <ListItemText primary="Dashboard" />
+                    </ListItem>
+                    <ListItem button onClick={() => handleMobileNavigation('/recruiter/dashboard')}>
+                      <ListItemText primary="Recruiter Area" />
+                    </ListItem>
+                    <ListItem button onClick={() => handleMobileNavigation('/jobs/create')}>
+                      <ListItemText primary="Post Job" />
+                    </ListItem>
+                  </>
+                )}
+                {user.role === 'ADMIN' && (
+                  <ListItem button onClick={() => handleMobileNavigation('/admin/dashboard')}>
+                    <ListItemText primary="Admin Dashboard" />
+                  </ListItem>
+                )}
+                <ListItem button onClick={() => handleMobileNavigation('/messages')}>
+                  <ListItemText primary="Messages" />
+                </ListItem>
+                <Box sx={{ my: 1, borderTop: '1px solid #eee' }} />
+                <ListItem button onClick={handleLogout}>
+                  <ListItemText primary="Logout" sx={{ color: 'error.main' }} />
+                </ListItem>
+              </>
+            ) : (
+              <>
+                <Box sx={{ my: 1, borderTop: '1px solid #eee' }} />
+                <ListItem button onClick={() => handleMobileNavigation('/login')}>
+                  <ListItemText primary="Join Now" />
+                </ListItem>
+              </>
+            )}
+          </List>
+        </Box>
+      </Drawer>
+
+      <Box sx={{ minHeight: '100vh', paddingTop: '80px', position: 'relative', zIndex: 1, overflowX: 'hidden' }}>
+        {children}
       </Box>
     </Box>
   );

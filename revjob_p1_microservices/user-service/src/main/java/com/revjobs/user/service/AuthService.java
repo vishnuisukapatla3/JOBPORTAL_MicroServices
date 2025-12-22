@@ -29,6 +29,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -47,9 +48,12 @@ public class AuthService {
         user = userRepository.save(user);
 
         String jwtToken = jwtService.generateToken(user);
-        
+
         saveToken(user, jwtToken);
-        
+
+        // Send welcome email
+        emailService.sendWelcomeEmail(user.getEmail(), user.getFirstName());
+
         return new AuthResponse(jwtToken, mapToDTO(user));
     }
 
@@ -58,9 +62,7 @@ public class AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail().trim().toLowerCase(),
-                        request.getPassword()
-                )
-        );
+                        request.getPassword()));
 
         User user = userRepository.findByEmail(request.getEmail().trim().toLowerCase())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
@@ -70,16 +72,16 @@ public class AuthService {
         }
 
         String jwtToken = jwtService.generateToken(user);
-        
+
         revokeAllUserTokens(user);
         saveToken(user, jwtToken);
-        
+
         return new AuthResponse(jwtToken, mapToDTO(user));
     }
 
     @Transactional
-    public AuthResponse oauth2Login(String provider, String oauth2Id, String email, 
-                                    String firstName, String lastName) {
+    public AuthResponse oauth2Login(String provider, String oauth2Id, String email,
+            String firstName, String lastName) {
         User user = userRepository.findByOauth2ProviderAndOauth2Id(provider, oauth2Id)
                 .orElseGet(() -> {
                     User newUser = new User();
@@ -94,10 +96,10 @@ public class AuthService {
                 });
 
         String jwtToken = jwtService.generateToken(user);
-        
+
         revokeAllUserTokens(user);
         saveToken(user, jwtToken);
-        
+
         return new AuthResponse(jwtToken, mapToDTO(user));
     }
 
@@ -113,8 +115,9 @@ public class AuthService {
 
     private void revokeAllUserTokens(User user) {
         var validTokens = tokenRepository.findByUserAndRevokedFalse(user);
-        if (validTokens.isEmpty()) return;
-        
+        if (validTokens.isEmpty())
+            return;
+
         validTokens.forEach(token -> token.setRevoked(true));
         tokenRepository.saveAll(validTokens);
     }
@@ -129,5 +132,56 @@ public class AuthService {
         dto.setActive(user.getActive());
         return dto;
     }
-}
 
+    @Transactional
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("User not found with email: " + email));
+
+        // Generate 6-digit OTP
+        String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+
+        // Save OTP token
+        Token token = new Token();
+        token.setUser(user);
+        token.setToken(otp);
+        token.setTokenType(TokenType.OTP);
+        token.setRevoked(false);
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+        tokenRepository.save(token);
+
+        // Send email
+        emailService.sendOtpEmail(user.getEmail(), otp, user.getFirstName());
+    }
+
+    public boolean verifyOtp(String email, String otp) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        return tokenRepository.findByUserAndRevokedFalse(user).stream()
+                .anyMatch(t -> t.getTokenType() == TokenType.OTP &&
+                        t.getToken().equals(otp) &&
+                        !t.isExpired());
+    }
+
+    @Transactional
+    public void resetPassword(String email, String otp, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        Token validToken = tokenRepository.findByUserAndRevokedFalse(user).stream()
+                .filter(t -> t.getTokenType() == TokenType.OTP &&
+                        t.getToken().equals(otp) &&
+                        !t.isExpired())
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException("Invalid or expired OTP"));
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Revoke OTP
+        validToken.setRevoked(true);
+        tokenRepository.save(validToken);
+    }
+}

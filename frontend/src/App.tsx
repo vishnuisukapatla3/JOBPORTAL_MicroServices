@@ -16,11 +16,14 @@ import Home from './pages/Home';
 import Jobs from './pages/Jobs';
 import Companies from './pages/Companies';
 import Services from './pages/Services';
+import ServiceDetail from './pages/ServiceDetail';
 import Careers from './pages/Careers';
 import Blog from './pages/Blog';
+import BlogDetail from './pages/BlogDetail';
 import Applications from './pages/Applications';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
+import AuthPage from './components/auth/AuthPage';
 import ForgotPassword from './components/auth/ForgotPassword';
 import JobDetail from './components/jobs/JobDetail';
 import CreateJob from './components/jobs/CreateJob';
@@ -38,15 +41,17 @@ const AppRoutes: React.FC = () => {
     <Layout>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/register" element={<AuthPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/companies" element={<Companies />} />
         <Route path="/services" element={<Services />} />
+        <Route path="/services/:id" element={<ServiceDetail />} />
         <Route path="/careers" element={<Careers />} />
         <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:id" element={<BlogDetail />} />
         <Route path="/applications" element={
           <ProtectedRoute roles={['JOB_SEEKER']}>
             <Applications />

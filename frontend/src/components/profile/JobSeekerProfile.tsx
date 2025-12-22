@@ -60,9 +60,11 @@ const JobSeekerProfile: React.FC = () => {
     skills: [],
     experience: [],
     expectedSalary: 0,
+    profilePicture: '', // Add this field
   });
   const [newSkill, setNewSkill] = useState('');
   const [loading, setLoading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null); // Ref for file input
   const { user } = useAuth();
 
   useEffect(() => {
@@ -73,6 +75,9 @@ const JobSeekerProfile: React.FC = () => {
     try {
       if (user?.email) {
         const profileData = await userAPI.getProfile();
+        // Load local data for persistence
+        const localData = JSON.parse(localStorage.getItem(`userProfile_${user.email}`) || '{}');
+
         // userAPI returns { ...localProfile, email: user.email }
         // We merge with default structure to ensure all fields exist
         setProfile((prev) => ({
@@ -83,7 +88,11 @@ const JobSeekerProfile: React.FC = () => {
           skills: [],
           experience: [],
           expectedSalary: 0,
-          ...profileData
+          profilePicture: localData.profilePicture || profileData.profilePicture || '',
+          resumeUrl: localData.resumeUrl || profileData.resumeUrl || '',
+          resumeName: localData.resumeName || profileData.resumeName || '',
+          ...profileData,
+          ...localData // Ensure local updates take precedence
         }));
       }
     } catch (error) {
@@ -142,6 +151,29 @@ const JobSeekerProfile: React.FC = () => {
     }));
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && user?.email) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+
+        // Update state
+        setProfile(prev => ({ ...prev, profilePicture: base64String }));
+
+        // Save to local storage explicitly to ensure persistence
+        const currentData = JSON.parse(localStorage.getItem(`userProfile_${user.email}`) || '{}');
+        const updatedData = { ...currentData, profilePicture: base64String };
+        localStorage.setItem(`userProfile_${user.email}`, JSON.stringify(updatedData));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
   const handleResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -149,15 +181,33 @@ const JobSeekerProfile: React.FC = () => {
         alert('Please upload a PDF or Word document');
         return;
       }
+      // 5MB limit
       if (file.size > 5 * 1024 * 1024) {
         alert('File size should be less than 5MB');
         return;
       }
       try {
-        // Create a URL for the uploaded file (for demo purposes)
-        const fileUrl = URL.createObjectURL(file);
-        setProfile(prev => ({ ...prev, resumeUrl: fileUrl, resumeName: file.name }));
-        alert('Resume uploaded successfully!');
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64String = reader.result as string;
+
+          // Update state with Base64 URL
+          setProfile(prev => ({ ...prev, resumeUrl: base64String, resumeName: file.name }));
+
+          // Persist to local storage similar to profile image
+          if (user?.email) {
+            const currentData = JSON.parse(localStorage.getItem(`userProfile_${user.email}`) || '{}');
+            const updatedData = {
+              ...currentData,
+              resumeUrl: base64String,
+              resumeName: file.name
+            };
+            localStorage.setItem(`userProfile_${user.email}`, JSON.stringify(updatedData));
+          }
+
+          alert('Resume uploaded successfully!');
+        };
+        reader.readAsDataURL(file);
       } catch (error) {
         console.error('Error uploading resume:', error);
         alert('Error uploading resume. Please try again.');
@@ -220,9 +270,51 @@ const JobSeekerProfile: React.FC = () => {
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Box display="flex" alignItems="center" gap={3} mb={3}>
-              <Avatar sx={{ width: 80, height: 80 }}>
-                {profile.firstName?.charAt(0) || 'U'}
-              </Avatar>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                hidden
+                accept="image/png, image/jpeg, image/jpg, image/gif"
+              />
+              <Box position="relative">
+                <Avatar
+                  src={profile.profilePicture}
+                  onClick={triggerFileInput}
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    cursor: 'pointer',
+                    transition: '0.3s',
+                    border: '2px solid transparent',
+                    '&:hover': {
+                      opacity: 0.8,
+                      borderColor: 'primary.main',
+                      boxShadow: '0 0 8px rgba(0,0,0,0.2)'
+                    }
+                  }}
+                >
+                  {profile.firstName?.charAt(0) || 'U'}
+                </Avatar>
+                <Box
+                  onClick={triggerFileInput}
+                  sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    bgcolor: 'white',
+                    borderRadius: '50%',
+                    p: 0.5,
+                    boxShadow: 1,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <CloudUpload sx={{ fontSize: 16, color: 'primary.main' }} />
+                </Box>
+              </Box>
               <Box>
                 <Typography variant="h5">
                   {profile.firstName || ''} {profile.lastName || ''}
